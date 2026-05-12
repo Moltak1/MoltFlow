@@ -48,6 +48,12 @@ This plan covers the initial Go project setup, defining the core block execution
    - **Database as Single Source of Truth:** All block outputs are persisted to SQLite.
    - **Concurrency Locking:** The internal SQLite state DB enforces mutual exclusion per `job_id`.
    - **State Injection (Templating via DB & Env):** Expressions like `{{ blocks.<block_id>.<key> }}` and `{{ env.<KEY> }}` are resolved before execution.
+   - **Idempotency & Resumption:** Restarting a failed job skips SUCCESS blocks.
+   - **Step Replay & Time Travel (Killer Feature):** Every block's exact evaluated input configuration and output metadata are stored immutably in SQLite.
+   - **Data Retention & Pruning Strategy:** To prevent storage explosion, MoltFlow implements a three-tier retention strategy:
+     - **Metadata/Data Separation:** SQLite stores metadata and file paths; raw data remains on the filesystem or in staging databases.
+     - **Versioned Staging:** The internal staging DB uses versioned tables (e.g., `raw_sales_run_123`) to ensure historical state is preserved for the retention window.
+     - **Automated Pruning:** Pipelines support a `retention` config (e.g., `days: 7` or `max_runs: 10`). MoltFlow's engine periodically purges expired files and staging tables while keeping minimal metadata records for auditing.
 4. **Architecture - Script Execution:**
    - **SQL Scripts (`sql_script`):** Executed directly.
    - **Bash Scripts (`bash_script`):** Executed directly via Go's `os/exec`.
